@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Production Tracking</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; }
+    h2 { margin-top:40px; }
+    table { width:100%; border-collapse: collapse; background:#fff; }
+    th, td { border:1px solid #ccc; padding:8px; text-align:center; }
+    th { background:#2c3e50; color:#fff; }
+    button { padding:6px 10px; cursor:pointer; }
+    .prod { background:#dfe6e9; }
+    .temp { background:#ffeaa7; }
+    .qa { background:#b2bec3; }
+    .pack { background:#a3e4d7; }
+  </style>
+</head>
+<body>
+
+<h1>Simple Production Tracking Website</h1>
+<p><b>Logic:</b> Only previous stage OK material is visible in next stage.</p>
+
+<!-- PRODUCTION -->
+<h2>Production</h2>
+<table>
+  <tr><th>Batch No</th><th>Part No</th><th>Qty</th><th>Action</th></tr>
+  <tr class="prod">
+    <td>B001</td><td>16944495</td><td>5000</td>
+    <td><button onclick="moveStage(this, 'TEMP_OK')">Production OK</button></td>
+  </tr>
+</table>
+
+<!-- TEMPERING -->
+<h2>Tempering (Shows only Production OK)</h2>
+<table id="tempering">
+  <tr><th>Batch No</th><th>Part No</th><th>Qty</th><th>Action</th></tr>
+</table>
+
+<!-- QA -->
+<h2>QA Checking (Shows only Tempering OK)</h2>
+<table id="qa">
+  <tr><th>Batch No</th><th>Part No</th><th>Qty</th><th>Action</th></tr>
+</table>
+
+<!-- PACKING -->
+<h2>Final Packing (Shows only QA OK)</h2>
+<table id="packing">
+  <tr><th>Batch No</th><th>Part No</th><th>Qty</th><th>Status</th></tr>
+</table>
+
+<script>
+function moveStage(btn, status) {
+  const row = btn.parentElement.parentElement;
+  const cells = row.children;
+
+  const newRow = document.createElement('tr');
+  newRow.innerHTML = `<td>${cells[0].innerText}</td><td>${cells[1].innerText}</td><td>${cells[2].innerText}</td>`;
+
+  if(status === 'TEMP_OK'){
+    newRow.className = 'temp';
+    newRow.innerHTML += `<td><button onclick="moveStage(this, 'QA_OK')">Tempering OK</button></td>`;
+    document.getElementById('tempering').appendChild(newRow);
+  }
+
+  if(status === 'QA_OK'){
+    newRow.className = 'qa';
+    newRow.innerHTML += `<td><button onclick="moveStage(this, 'PACKED')">QA OK</button></td>`;
+    document.getElementById('qa').appendChild(newRow);
+  }
+
+  if(status === 'PACKED'){
+    newRow.className = 'pack';
+    newRow.innerHTML += `<td>PACKED</td>`;
+    document.getElementById('packing').appendChild(newRow);
+  }
+
+  row.remove();
+}
+</script>
+
+</body>
+</html>
