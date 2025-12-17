@@ -32,3 +32,134 @@ th {
 button {
   padding: 6px 12px;
   cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Material Tracking System</h1>
+
+<!-- ================= PRODUCTION ================= -->
+<h2>Production</h2>
+<table>
+<tr>
+  <th>Batch</th>
+  <th>Part</th>
+  <th>Qty</th>
+  <th>Action</th>
+</tr>
+<tr>
+  <td>B001</td>
+  <td>16944495</td>
+  <td>5000</td>
+  <td>
+    <button onclick="moveStage(this,'TEMP_OK')">Production OK</button>
+  </td>
+</tr>
+</table>
+
+<!-- ================= TEMPERING ================= -->
+<h2>Tempering</h2>
+<table id="tempering">
+<tr>
+  <th>Batch</th>
+  <th>Part</th>
+  <th>Qty</th>
+  <th>Action</th>
+</tr>
+</table>
+
+<!-- ================= QA ================= -->
+<h2>QA</h2>
+<table id="qa">
+<tr>
+  <th>Batch</th>
+  <th>Part</th>
+  <th>Qty</th>
+  <th>Action</th>
+</tr>
+</table>
+
+<!-- ================= PACKING ================= -->
+<h2>Packing</h2>
+<table id="packing">
+<tr>
+  <th>Batch</th>
+  <th>Part</th>
+  <th>Qty</th>
+  <th>Status</th>
+</tr>
+</table>
+
+<script>
+// 🔴 NEW GOOGLE APPS SCRIPT URL (CORS SAFE)
+const API_URL = "https://script.google.com/macros/s/AKfycbxbuCeMG9yKM4UTEmC_OtCF4aKOJejFaaiZMkd1uwRAUw7Hn8n4SL8IJqyxlfF5LZ3U/exec";
+
+// ================= SAVE TO GOOGLE SHEET =================
+function saveToSheet(data) {
+  fetch(API_URL, {
+    method: "POST",
+    mode: "no-cors",        // ⭐ CORS FIX
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
+  });
+}
+
+// ================= MOVE STAGE =================
+function moveStage(btn, status) {
+  const row = btn.parentElement.parentElement;
+  const cells = row.children;
+
+  const batch = cells[0].innerText;
+  const part  = cells[1].innerText;
+  const qty   = cells[2].innerText;
+
+  // Save to Google Sheet
+  saveToSheet({
+    batch_no: batch,
+    part_no: part,
+    quantity: qty,
+    stage: status,
+    status: status,
+    operator: "Operator1",
+    remarks: ""
+  });
+
+  // Create new row
+  const newRow = document.createElement("tr");
+  newRow.innerHTML = `
+    <td>${batch}</td>
+    <td>${part}</td>
+    <td>${qty}</td>
+  `;
+
+  if (status === "TEMP_OK") {
+    newRow.innerHTML += `
+      <td>
+        <button onclick="moveStage(this,'QA_OK')">Tempering OK</button>
+      </td>`;
+    document.getElementById("tempering").appendChild(newRow);
+  }
+
+  if (status === "QA_OK") {
+    newRow.innerHTML += `
+      <td>
+        <button onclick="moveStage(this,'PACKED')">QA OK</button>
+      </td>`;
+    document.getElementById("qa").appendChild(newRow);
+  }
+
+  if (status === "PACKED") {
+    newRow.innerHTML += `<td>PACKED</td>`;
+    document.getElementById("packing").appendChild(newRow);
+  }
+
+  row.remove();
+}
+</script>
+
+</body>
+</html>
