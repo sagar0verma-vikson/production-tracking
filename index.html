@@ -51,7 +51,16 @@
 </table>
 
 <script>
-function moveStage(btn, status) {
+const API_URL = "https://script.google.com/macros/s/AKfycby6m5OaLijqgTR1QwtosretT9NtkGxVjE9oLPTzaAjTtBpJKk1bLiezfwhnlZDjsw01/exec";
+
+function saveToSheet(data) {
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" }
+  });
+}
+  function moveStage(btn, status) {
   const row = btn.parentElement.parentElement;
   const cells = row.children;
 
@@ -75,6 +84,17 @@ function moveStage(btn, status) {
     newRow.innerHTML += `<td>PACKED</td>`;
     document.getElementById('packing').appendChild(newRow);
   }
+saveToSheet({
+  batch_no: cells[0].innerText,
+  part_no: cells[1].innerText,
+  quantity: cells[2].innerText,
+  stage: status === 'TEMP_OK' ? 'Tempering' :
+         status === 'QA_OK' ? 'QA' :
+         status === 'PACKED' ? 'Packing' : '',
+  status: status,
+  operator: "Operator1",
+  remarks: ""
+});
 
   row.remove();
 }
