@@ -3,18 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Process Tracking System</title>
+<title>Production Process Tracking</title>
 
 <style>
 body { font-family: Arial; background:#f4f6f8; padding:10px; }
+h2 { margin-top:5px; }
 .tabs button {
   padding:8px 12px; margin:2px; border:none; cursor:pointer;
+  background:#ccc;
 }
 .tabs button.active { background:#2c3e50; color:#fff; }
 .tab { display:none; background:#fff; padding:10px; margin-top:10px; }
 input, select, button { width:100%; padding:6px; margin:4px 0; }
+button { background:#2c3e50; color:#fff; border:none; cursor:pointer; }
 table { width:100%; border-collapse:collapse; margin-top:10px; }
 th, td { border:1px solid #ccc; padding:6px; text-align:center; }
+.action-box select, .action-box input { margin-bottom:4px; }
 </style>
 </head>
 
@@ -23,7 +27,7 @@ th, td { border:1px solid #ccc; padding:6px; text-align:center; }
 <h2>Production Tracking System</h2>
 
 <div class="tabs">
-  <button onclick="openTab('production')" class="active">Production</button>
+  <button class="active" onclick="openTab('production')">Production</button>
   <button onclick="openTab('tempering')">Tempering</button>
   <button onclick="openTab('cleaning')">Cleaning</button>
   <button onclick="openTab('vibro')">Vibro</button>
@@ -59,67 +63,43 @@ th, td { border:1px solid #ccc; padding:6px; text-align:center; }
   <input id="handlingQty" type="number" placeholder="Qty per Bin / Bag">
   <input id="handlingCount" type="number" placeholder="No. of Bins / Bags">
 
-  <button onclick="releaseProduction()">Release Material</button>
+  <button onclick="releaseProduction()">Release to Next Process</button>
 </div>
 
-<!-- ================= PROCESS TABLES ================= -->
-<div id="tempering" class="tab">
-  <h3>Tempering</h3>
-  <table id="temperingTable"></table>
-</div>
-
-<div id="cleaning" class="tab">
-  <h3>Cleaning</h3>
-  <table id="cleaningTable"></table>
-</div>
-
-<div id="vibro" class="tab">
-  <h3>Vibro</h3>
-  <table id="vibroTable"></table>
-</div>
-
-<div id="plating" class="tab">
-  <h3>Plating</h3>
-  <table id="platingTable"></table>
-</div>
-
-<div id="sorting" class="tab">
-  <h3>Sorting</h3>
-  <table id="sortingTable"></table>
-</div>
-
-<div id="qa" class="tab">
-  <h3>QA</h3>
-  <table id="qaTable"></table>
-</div>
+<!-- ================= PROCESS TABS ================= -->
+<div id="tempering" class="tab"><h3>Tempering</h3><table id="temperingTable"></table></div>
+<div id="cleaning" class="tab"><h3>Cleaning</h3><table id="cleaningTable"></table></div>
+<div id="vibro" class="tab"><h3>Vibro</h3><table id="vibroTable"></table></div>
+<div id="plating" class="tab"><h3>Plating</h3><table id="platingTable"></table></div>
+<div id="sorting" class="tab"><h3>Sorting</h3><table id="sortingTable"></table></div>
+<div id="qa" class="tab"><h3>QA</h3><table id="qaTable"></table></div>
 
 <script>
-/* 🔴 YOUR NEW APPS SCRIPT URL */
-const API_URL =
-"https://script.google.com/macros/s/AKfycbyWqUFahw4Rq6gBgxsUg0rTd2-pY2Ttab-9uWqb21Z4VdXD47LCmv8zxbfwnkRklP47/exec";
+/* ===== YOUR APPS SCRIPT URL ===== */
+const API_URL = "https://script.google.com/macros/s/AKfycbyWqUFahw4Rq6gBgxsUg0rTd2-pY2Ttab-9uWqb21Z4VdXD47LCmv8zxbfwnkRklP47/exec";
 
-/* TAB SWITCH */
-function openTab(id){
-  document.querySelectorAll('.tab').forEach(t=>t.style.display="none");
-  document.getElementById(id).style.display="block";
+/* ===== TAB SWITCH ===== */
+function openTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.style.display = "none");
+  document.getElementById(id).style.display = "block";
 
-  if(id!=="production"){
-    loadProcess(capitalize(id), id+"Table");
-  }
-
-  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.remove("active"));
   event.target.classList.add("active");
+
+  if (id !== 'production') {
+    loadProcess(capitalize(id), id + "Table");
+  }
 }
 
-/* PRODUCTION RELEASE */
-function releaseProduction(){
+/* ===== PRODUCTION RELEASE ===== */
+function releaseProduction() {
 
-  fetch(API_URL,{
-    method:"POST",
-    mode:"no-cors",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      current_process:"Production",
+  fetch(API_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      current_process: "Production",
       next_process: nextProcess.value,
       part_no: part.value,
       batch_no: batch.value,
@@ -127,76 +107,120 @@ function releaseProduction(){
       handling_type: handlingType.value,
       handling_qty: handlingQty.value,
       handling_count: handlingCount.value,
-      status:"OK",
-      operator:"Production"
+      status: "OK",
+      operator: "Production",
+      remarks: ""
     })
   });
 
   alert("Released to " + nextProcess.value);
 }
 
-/* LOAD DATA FROM EXCEL */
-function loadProcess(process, tableId){
+/* ===== LOAD DATA FROM GOOGLE SHEET ===== */
+function loadProcess(process, tableId) {
 
   fetch(API_URL + "?process=" + process)
-    .then(r=>r.json())
-    .then(rows=>{
-      const table=document.getElementById(tableId);
-      table.innerHTML=
-        "<tr><th>Batch</th><th>Part</th><th>Qty</th><th>Action</th></tr>";
+    .then(res => res.json())
+    .then(rows => {
+      const table = document.getElementById(tableId);
+      table.innerHTML = "<tr><th>Batch</th><th>Part</th><th>Qty</th><th>Action</th></tr>";
 
-      rows.forEach(r=>{
-        const tr=document.createElement("tr");
-        tr.innerHTML=`
+      rows.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
           <td>${r.Batch_No}</td>
           <td>${r.Part_No}</td>
           <td>${r.Quantity}</td>
-          <td>
-            <button onclick="processOK('${process}','${r.Batch_No}','${r.Part_No}','${r.Quantity}')">
-              OK
-            </button>
+          <td class="action-box">
+            <select class="nextP">
+              <option>Cleaning</option>
+              <option>Vibro</option>
+              <option>Plating</option>
+              <option>Sorting</option>
+              <option>QA</option>
+              <option>Packing</option>
+            </select>
+            <input class="remark" placeholder="Remark (mandatory)">
+            <button onclick="processOK(this,'${process}')">OK</button>
+            <button onclick="processNG(this,'${process}')">NG</button>
           </td>`;
         table.appendChild(tr);
       });
     });
 }
 
-/* PROCESS OK */
-function processOK(current,batch,part,qty){
+/* ===== OK ACTION ===== */
+function processOK(btn, currentProcess) {
 
-  fetch(API_URL,{
-    method:"POST",
-    mode:"no-cors",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      current_process: current,
-      next_process: getNextProcess(current),
+  const row = btn.parentElement.parentElement;
+  const batch = row.children[0].innerText;
+  const part  = row.children[1].innerText;
+  const qty   = row.children[2].innerText;
+
+  const nextProcess = row.querySelector('.nextP').value;
+  const remark = row.querySelector('.remark').value;
+
+  if (!remark) {
+    alert("Remark is mandatory");
+    return;
+  }
+
+  fetch(API_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      current_process: currentProcess,
+      next_process: nextProcess,
       batch_no: batch,
       part_no: part,
       quantity: qty,
-      status:"OK",
-      operator: current
+      status: "OK",
+      remarks: remark,
+      operator: currentProcess
     })
   });
 
-  alert(current + " OK → sent to next process");
-  loadProcess(current, current.toLowerCase()+"Table");
+  row.remove();
 }
 
-/* NEXT PROCESS MAP */
-function getNextProcess(p){
-  const map={
-    "Tempering":"Cleaning",
-    "Cleaning":"Vibro",
-    "Vibro":"Plating",
-    "Plating":"Sorting",
-    "Sorting":"QA",
-    "QA":"Packing"
-  };
-  return map[p];
+/* ===== NG ACTION ===== */
+function processNG(btn, currentProcess) {
+
+  const row = btn.parentElement.parentElement;
+  const batch = row.children[0].innerText;
+  const part  = row.children[1].innerText;
+  const qty   = row.children[2].innerText;
+
+  const remark = row.querySelector('.remark').value;
+
+  if (!remark) {
+    alert("Remark is mandatory for NG");
+    return;
+  }
+
+  fetch(API_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      current_process: currentProcess,
+      next_process: currentProcess,
+      batch_no: batch,
+      part_no: part,
+      quantity: qty,
+      status: "NG",
+      remarks: remark,
+      operator: currentProcess
+    })
+  });
+
+  row.remove();
 }
 
-function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function capitalize(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 </script>
 
 </body>
