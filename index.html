@@ -1,137 +1,95 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
+<title>Production Dispatch System</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Material Tracking System</title>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  padding: 20px;
+body { font-family: Arial; background:#f4f6f8; padding:20px; }
+input, select, button {
+  width:100%; padding:8px; margin:6px 0;
 }
-h1 { margin-bottom: 20px; }
-h2 { margin-top: 30px; }
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-  margin-bottom: 20px;
-}
-th, td {
-  border: 1px solid #ccc;
-  padding: 8px;
-  text-align: center;
-}
-th {
-  background: #2c3e50;
-  color: #fff;
-}
-button {
-  padding: 6px 12px;
-  cursor: pointer;
-}
+button { background:#2c3e50; color:#fff; border:none; }
 </style>
 </head>
 
 <body>
 
-<h1>Material Tracking System</h1>
+<h2>Production → Next Process Dispatch</h2>
 
-<!-- PRODUCTION -->
-<h2>Production</h2>
-<table id="production">
-<tr>
-  <th>Batch</th>
-  <th>Part</th>
-  <th>Qty</th>
-  <th>Action</th>
-</tr>
-<tr>
-  <td>B001</td>
-  <td>16944495</td>
-  <td>5000</td>
-  <td>
-    <button onclick="moveStage(this,'TEMP_OK')">Production OK</button>
-  </td>
-</tr>
-</table>
+<input id="part" placeholder="Part No">
+<input id="batch" placeholder="Batch No">
+<input id="wo" placeholder="Work Order No">
+<input id="machine" placeholder="Machine No">
+<input id="qty" type="number" placeholder="Total Quantity">
+<input id="plant" placeholder="Plant">
+<input id="shift" placeholder="Shift">
+<input id="grn" placeholder="GRN No">
+<input id="coil" placeholder="Coil No">
 
-<!-- TEMPERING -->
-<h2>Tempering</h2>
-<table id="tempering">
-<tr>
-  <th>Batch</th>
-  <th>Part</th>
-  <th>Qty</th>
-  <th>Action</th>
-</tr>
-</table>
+<label>Next Process</label>
+<select id="nextProcess">
+  <option value="">Select</option>
+  <option>Tempering</option>
+  <option>Cleaning</option>
+  <option>Vibro</option>
+  <option>Plating</option>
+  <option>Deburring</option>
+  <option>Cutting</option>
+  <option>Sorting</option>
+  <option>QA</option>
+</select>
 
-<!-- QA -->
-<h2>QA</h2>
-<table id="qa">
-<tr>
-  <th>Batch</th>
-  <th>Part</th>
-  <th>Qty</th>
-  <th>Action</th>
-</tr>
-</table>
+<label>Handling Type</label>
+<select id="handlingType">
+  <option value="">Select</option>
+  <option>Bin</option>
+  <option>Bag</option>
+</select>
 
-<!-- PACKING -->
-<h2>Packing</h2>
-<table id="packing">
-<tr>
-  <th>Batch</th>
-  <th>Part</th>
-  <th>Qty</th>
-  <th>Status</th>
-</tr>
-</table>
+<input id="handlingQty" type="number" placeholder="Qty per Bin / Bag">
+<input id="handlingCount" type="number" placeholder="No. of Bins / Bags">
+
+<button onclick="submitProduction()">Release to Next Process</button>
 
 <script>
-/* ✅ NEW WORKING GOOGLE APPS SCRIPT URL */
-const API_URL =
-"https://script.google.com/macros/s/AKfycbxbuCeMG9yKM4UTEmC_OtCF4aKOJejFaaiZMkd1uwRAUw7Hn8n4SL8IJqyxlfF5LZ3U/exec";
+const API_URL = "PASTE_YOUR_NEW_DEPLOYMENT_URL_HERE";
 
-/* SAVE DATA TO GOOGLE SHEET (CORS SAFE) */
-function saveToSheet(data) {
+function submitProduction() {
+
   fetch(API_URL, {
     method: "POST",
     mode: "no-cors",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
+    body: JSON.stringify({
+
+      part_no: part.value,
+      batch_no: batch.value,
+      work_order_no: wo.value,
+      machine_no: machine.value,
+      quantity: qty.value,
+      plant: plant.value,
+      shift: shift.value,
+      grn_no: grn.value,
+      coil_no: coil.value,
+
+      from_process: "-",
+      to_process: nextProcess.value,
+
+      handling_type: handlingType.value,
+      handling_qty: handlingQty.value,
+      handling_count: handlingCount.value,
+
+      status: "RELEASED",
+      operator: "Production",
+      remarks: ""
+    })
   });
+
+  alert("Material released to " + nextProcess.value);
 }
+</script>
 
-/* MOVE MATERIAL STAGE */
-function moveStage(btn, status) {
-  const row = btn.parentElement.parentElement;
-  const cells = row.children;
-
-  const batch = cells[0].innerText;
-  const part  = cells[1].innerText;
-  const qty   = cells[2].innerText;
-
-  // Save entry
-  saveToSheet({
-    batch_no: batch,
-    part_no: part,
-    quantity: qty,
-    stage: status,
-    status: status,
-    operator: "Operator1",
-    remarks: ""
-  });
-
-  const newRow = document.createElement("tr");
-  newRow.innerHTML = `
-    <td>${batch}</td>
-    <td>${part}</td>
-    <td>${qty}</td>
-  `;
-
-  if (status === "TEMP_OK") {
-    n
+</body>
+</html>
