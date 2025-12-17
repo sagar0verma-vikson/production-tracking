@@ -6,88 +6,29 @@
 <title>Material Tracking System</title>
 
 <style>
-body { font-family: Arial; background:#f4f6f8; padding:20px; }
-table { width:100%; border-collapse:collapse; background:#fff; }
-th, td { border:1px solid #ccc; padding:8px; text-align:center; }
-th { background:#2c3e50; color:#fff; }
-button { padding:6px 10px; }
-</style>
-</head>
-
-<body>
-
-<h1>Material Tracking System</h1>
-
-<h2>Production</h2>
-<table>
-<tr><th>Batch</th><th>Part</th><th>Qty</th><th>Action</th></tr>
-<tr>
-<td>B001</td>
-<td>16944495</td>
-<td>5000</td>
-<td><button onclick="moveStage(this,'TEMP_OK')">Production OK</button></td>
-</tr>
-</table>
-
-<h2>Tempering</h2>
-<table id="tempering">
-<tr><th>Batch</th><th>Part</th><th>Qty</th><th>Action</th></tr>
-</table>
-
-<h2>QA</h2>
-<table id="qa">
-<tr><th>Batch</th><th>Part</th><th>Qty</th><th>Action</th></tr>
-</table>
-
-<h2>Packing</h2>
-<table id="packing">
-<tr><th>Batch</th><th>Part</th><th>Qty</th><th>Status</th></tr>
-</table>
-
-<script>
-const API_URL = https://script.google.com/macros/s/AKfycbxbuCeMG9yKM4UTEmC_OtCF4aKOJejFaaiZMkd1uwRAUw7Hn8n4SL8IJqyxlfF5LZ3U/exec";
-
-function saveToSheet(data){
-  fetch(API_URL,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(data)
-  });
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  padding: 20px;
 }
-
-function moveStage(btn,status){
-  const row = btn.parentElement.parentElement;
-  const cells = row.children;
-
-  saveToSheet({
-    batch_no: cells[0].innerText,
-    part_no: cells[1].innerText,
-    quantity: cells[2].innerText,
-    stage: status,
-    status: status,
-    operator: "Operator1",
-    remarks: ""
-  });
-
-  const newRow = document.createElement("tr");
-  newRow.innerHTML = `<td>${cells[0].innerText}</td><td>${cells[1].innerText}</td><td>${cells[2].innerText}</td>`;
-
-  if(status==="TEMP_OK"){
-    newRow.innerHTML += `<td><button onclick="moveStage(this,'QA_OK')">Tempering OK</button></td>`;
-    document.getElementById("tempering").appendChild(newRow);
-  }
-  if(status==="QA_OK"){
-    newRow.innerHTML += `<td><button onclick="moveStage(this,'PACKED')">QA OK</button></td>`;
-    document.getElementById("qa").appendChild(newRow);
-  }
-  if(status==="PACKED"){
-    newRow.innerHTML += `<td>PACKED</td>`;
-    document.getElementById("packing").appendChild(newRow);
-  }
-
-  row.remove();
+h1, h2 {
+  margin-top: 30px;
 }
-</script>
-
-</body>
-</html>
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  margin-bottom: 20px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+}
+th {
+  background: #2c3e50;
+  color: #ffffff;
+}
+button {
+  padding: 6px 12px;
+  cursor: pointer;
