@@ -3,14 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Production Process Tracking</title>
+<title>Production Tracking System</title>
 
 <style>
 body { font-family: Arial; background:#f4f6f8; padding:10px; }
-h2 { margin-top:5px; }
+h2 { margin:5px 0; }
 .tabs button {
-  padding:8px 12px; margin:2px; border:none; cursor:pointer;
-  background:#ccc;
+  width:100%;
+  padding:8px; margin:2px 0;
+  border:none; cursor:pointer;
+  background:#d0d0d0;
 }
 .tabs button.active { background:#2c3e50; color:#fff; }
 .tab { display:none; background:#fff; padding:10px; margin-top:10px; }
@@ -18,7 +20,7 @@ input, select, button { width:100%; padding:6px; margin:4px 0; }
 button { background:#2c3e50; color:#fff; border:none; cursor:pointer; }
 table { width:100%; border-collapse:collapse; margin-top:10px; }
 th, td { border:1px solid #ccc; padding:6px; text-align:center; }
-.action-box select, .action-box input { margin-bottom:4px; }
+.action select, .action input { margin-bottom:4px; }
 </style>
 </head>
 
@@ -27,13 +29,13 @@ th, td { border:1px solid #ccc; padding:6px; text-align:center; }
 <h2>Production Tracking System</h2>
 
 <div class="tabs">
-  <button class="active" onclick="openTab('production')">Production</button>
-  <button onclick="openTab('tempering')">Tempering</button>
-  <button onclick="openTab('cleaning')">Cleaning</button>
-  <button onclick="openTab('vibro')">Vibro</button>
-  <button onclick="openTab('plating')">Plating</button>
-  <button onclick="openTab('sorting')">Sorting</button>
-  <button onclick="openTab('qa')">QA</button>
+  <button class="active" onclick="openTab('production',this)">Production</button>
+  <button onclick="openTab('tempering',this)">Tempering</button>
+  <button onclick="openTab('cleaning',this)">Cleaning</button>
+  <button onclick="openTab('vibro',this)">Vibro</button>
+  <button onclick="openTab('plating',this)">Plating</button>
+  <button onclick="openTab('sorting',this)">Sorting</button>
+  <button onclick="openTab('qa',this)">QA</button>
 </div>
 
 <!-- ================= PRODUCTION ================= -->
@@ -42,7 +44,13 @@ th, td { border:1px solid #ccc; padding:6px; text-align:center; }
 
   <input id="part" placeholder="Part No">
   <input id="batch" placeholder="Batch No">
+  <input id="workOrder" placeholder="Work Order No">
+  <input id="machine" placeholder="Machine No">
   <input id="qty" type="number" placeholder="Quantity">
+  <input id="plant" placeholder="Plant">
+  <input id="shift" placeholder="Shift">
+  <input id="grn" placeholder="GRN No">
+  <input id="coil" placeholder="Coil No">
 
   <label>Next Process</label>
   <select id="nextProcess">
@@ -75,63 +83,57 @@ th, td { border:1px solid #ccc; padding:6px; text-align:center; }
 <div id="qa" class="tab"><h3>QA</h3><table id="qaTable"></table></div>
 
 <script>
-/* ===== YOUR APPS SCRIPT URL ===== */
 const API_URL = "https://script.google.com/macros/s/AKfycbyWqUFahw4Rq6gBgxsUg0rTd2-pY2Ttab-9uWqb21Z4VdXD47LCmv8zxbfwnkRklP47/exec";
 
-/* ===== TAB SWITCH ===== */
-function openTab(id) {
-  document.querySelectorAll('.tab').forEach(t => t.style.display = "none");
-  document.getElementById(id).style.display = "block";
-
-  document.querySelectorAll('.tabs button').forEach(b => b.classList.remove("active"));
-  event.target.classList.add("active");
-
-  if (id !== 'production') {
-    loadProcess(capitalize(id), id + "Table");
-  }
+function openTab(id,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.style.display="none");
+  document.getElementById(id).style.display="block";
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  if(id!=="production") loadProcess(capitalize(id), id+"Table");
 }
 
-/* ===== PRODUCTION RELEASE ===== */
-function releaseProduction() {
-
-  fetch(API_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      current_process: "Production",
+function releaseProduction(){
+  fetch(API_URL,{
+    method:"POST",
+    mode:"no-cors",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      current_process:"Production",
       next_process: nextProcess.value,
       part_no: part.value,
       batch_no: batch.value,
+      work_order_no: workOrder.value,
+      machine_no: machine.value,
       quantity: qty.value,
+      plant: plant.value,
+      shift: shift.value,
+      grn_no: grn.value,
+      coil_no: coil.value,
       handling_type: handlingType.value,
       handling_qty: handlingQty.value,
       handling_count: handlingCount.value,
-      status: "OK",
-      operator: "Production",
-      remarks: ""
+      status:"OK",
+      operator:"Production",
+      remarks:""
     })
   });
-
-  alert("Released to " + nextProcess.value);
+  alert("Released to "+nextProcess.value);
 }
 
-/* ===== LOAD DATA FROM GOOGLE SHEET ===== */
-function loadProcess(process, tableId) {
-
-  fetch(API_URL + "?process=" + process)
-    .then(res => res.json())
-    .then(rows => {
-      const table = document.getElementById(tableId);
-      table.innerHTML = "<tr><th>Batch</th><th>Part</th><th>Qty</th><th>Action</th></tr>";
-
-      rows.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
+function loadProcess(process, tableId){
+  fetch(API_URL+"?process="+process)
+    .then(r=>r.json())
+    .then(rows=>{
+      const table=document.getElementById(tableId);
+      table.innerHTML="<tr><th>Batch</th><th>Part</th><th>Qty</th><th>Action</th></tr>";
+      rows.forEach(r=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML=`
           <td>${r.Batch_No}</td>
           <td>${r.Part_No}</td>
           <td>${r.Quantity}</td>
-          <td class="action-box">
+          <td class="action">
             <select class="nextP">
               <option>Cleaning</option>
               <option>Vibro</option>
@@ -149,78 +151,56 @@ function loadProcess(process, tableId) {
     });
 }
 
-/* ===== OK ACTION ===== */
-function processOK(btn, currentProcess) {
-
-  const row = btn.parentElement.parentElement;
-  const batch = row.children[0].innerText;
-  const part  = row.children[1].innerText;
-  const qty   = row.children[2].innerText;
-
-  const nextProcess = row.querySelector('.nextP').value;
-  const remark = row.querySelector('.remark').value;
-
-  if (!remark) {
-    alert("Remark is mandatory");
-    return;
-  }
-
-  fetch(API_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      current_process: currentProcess,
-      next_process: nextProcess,
+function processOK(btn,current){
+  const row=btn.parentElement.parentElement;
+  const batch=row.children[0].innerText;
+  const part=row.children[1].innerText;
+  const qty=row.children[2].innerText;
+  const next=row.querySelector('.nextP').value;
+  const remark=row.querySelector('.remark').value;
+  if(!remark){ alert("Remark mandatory"); return; }
+  fetch(API_URL,{
+    method:"POST", mode:"no-cors",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      current_process: current,
+      next_process: next,
       batch_no: batch,
       part_no: part,
       quantity: qty,
-      status: "OK",
+      status:"OK",
       remarks: remark,
-      operator: currentProcess
+      operator: current
     })
   });
-
   row.remove();
 }
 
-/* ===== NG ACTION ===== */
-function processNG(btn, currentProcess) {
-
-  const row = btn.parentElement.parentElement;
-  const batch = row.children[0].innerText;
-  const part  = row.children[1].innerText;
-  const qty   = row.children[2].innerText;
-
-  const remark = row.querySelector('.remark').value;
-
-  if (!remark) {
-    alert("Remark is mandatory for NG");
-    return;
-  }
-
-  fetch(API_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      current_process: currentProcess,
-      next_process: currentProcess,
+function processNG(btn,current){
+  const row=btn.parentElement.parentElement;
+  const batch=row.children[0].innerText;
+  const part=row.children[1].innerText;
+  const qty=row.children[2].innerText;
+  const remark=row.querySelector('.remark').value;
+  if(!remark){ alert("Remark mandatory"); return; }
+  fetch(API_URL,{
+    method:"POST", mode:"no-cors",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      current_process: current,
+      next_process: current,
       batch_no: batch,
       part_no: part,
       quantity: qty,
-      status: "NG",
+      status:"NG",
       remarks: remark,
-      operator: currentProcess
+      operator: current
     })
   });
-
   row.remove();
 }
 
-function capitalize(s) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
+function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 </script>
 
 </body>
