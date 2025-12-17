@@ -2,68 +2,163 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Production Dispatch System</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Process Tracking System</title>
 
 <style>
-body { font-family: Arial; background:#f4f6f8; padding:20px; }
-input, select, button {
-  width:100%; padding:8px; margin:6px 0;
+body {
+  font-family: Arial;
+  background: #f4f6f8;
+  padding: 10px;
 }
-button { background:#2c3e50; color:#fff; border:none; }
+.tabs button {
+  padding: 8px 12px;
+  margin: 2px;
+  border: none;
+  background: #ccc;
+}
+.tabs button.active {
+  background: #2c3e50;
+  color: #fff;
+}
+.tab {
+  display: none;
+  background: #fff;
+  padding: 10px;
+  margin-top: 10px;
+}
+input, select, button {
+  width: 100%;
+  padding: 6px;
+  margin: 4px 0;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px;
+  text-align: center;
+}
 </style>
 </head>
 
 <body>
 
-<h2>Production → Next Process Dispatch</h2>
+<h2>Production Tracking System</h2>
 
-<input id="part" placeholder="Part No">
-<input id="batch" placeholder="Batch No">
-<input id="wo" placeholder="Work Order No">
-<input id="machine" placeholder="Machine No">
-<input id="qty" type="number" placeholder="Total Quantity">
-<input id="plant" placeholder="Plant">
-<input id="shift" placeholder="Shift">
-<input id="grn" placeholder="GRN No">
-<input id="coil" placeholder="Coil No">
+<div class="tabs">
+  <button onclick="openTab('production')" class="active">Production</button>
+  <button onclick="openTab('tempering')">Tempering</button>
+  <button onclick="openTab('cleaning')">Cleaning</button>
+  <button onclick="openTab('vibro')">Vibro</button>
+  <button onclick="openTab('plating')">Plating</button>
+  <button onclick="openTab('sorting')">Sorting</button>
+  <button onclick="openTab('qa')">QA</button>
+</div>
 
-<label>Next Process</label>
-<select id="nextProcess">
-  <option value="">Select</option>
-  <option>Tempering</option>
-  <option>Cleaning</option>
-  <option>Vibro</option>
-  <option>Plating</option>
-  <option>Deburring</option>
-  <option>Cutting</option>
-  <option>Sorting</option>
-  <option>QA</option>
-</select>
+<!-- ================= PRODUCTION ================= -->
+<div id="production" class="tab" style="display:block">
+  <h3>Production Release</h3>
 
-<label>Handling Type</label>
-<select id="handlingType">
-  <option value="">Select</option>
-  <option>Bin</option>
-  <option>Bag</option>
-</select>
+  <input id="part" placeholder="Part No">
+  <input id="batch" placeholder="Batch No">
+  <input id="wo" placeholder="Work Order No">
+  <input id="machine" placeholder="Machine No">
+  <input id="qty" type="number" placeholder="Quantity">
+  <input id="plant" placeholder="Plant">
+  <input id="shift" placeholder="Shift">
+  <input id="grn" placeholder="GRN No">
+  <input id="coil" placeholder="Coil No">
 
-<input id="handlingQty" type="number" placeholder="Qty per Bin / Bag">
-<input id="handlingCount" type="number" placeholder="No. of Bins / Bags">
+  <label>Next Process</label>
+  <select id="nextProcess">
+    <option>Tempering</option>
+    <option>Cleaning</option>
+    <option>Vibro</option>
+    <option>Plating</option>
+    <option>Sorting</option>
+    <option>QA</option>
+  </select>
 
-<button onclick="submitProduction()">Release to Next Process</button>
+  <label>Handling Type</label>
+  <select id="handlingType">
+    <option>Bin</option>
+    <option>Bag</option>
+  </select>
+
+  <input id="handlingQty" type="number" placeholder="Qty per Bin / Bag">
+  <input id="handlingCount" type="number" placeholder="No. of Bins / Bags">
+
+  <button onclick="releaseProduction()">Release Material</button>
+</div>
+
+<!-- ================= PROCESS TABS ================= -->
+<div id="tempering" class="tab">
+  <h3>Tempering</h3>
+  <table id="temperingTable">
+    <tr><th>Batch</th><th>Part</th><th>Qty</th><th>Action</th></tr>
+  </table>
+</div>
+
+<div id="cleaning" class="tab">
+  <h3>Cleaning</h3>
+  <table id="cleaningTable">
+    <tr><th>Batch</th><th>Part</th><th>Qty</th><th>Action</th></tr>
+  </table>
+</div>
+
+<div id="vibro" class="tab">
+  <h3>Vibro</h3>
+  <table id="vibroTable">
+    <tr><th>Batch</th><th>Part</th><th>Qty</th><th>Action</th></tr>
+  </table>
+</div>
+
+<div id="plating" class="tab">
+  <h3>Plating</h3>
+  <table id="platingTable">
+    <tr><th>Batch</th><th>Part</th><th>Qty</th><th>Action</th></tr>
+  </table>
+</div>
+
+<div id="sorting" class="tab">
+  <h3>Sorting</h3>
+  <table id="sortingTable">
+    <tr><th>Batch</th><th>Part</th><th>Qty</th><th>Action</th></tr>
+  </table>
+</div>
+
+<div id="qa" class="tab">
+  <h3>QA</h3>
+  <table id="qaTable">
+    <tr><th>Batch</th><th>Part</th><th>Qty</th><th>Action</th></tr>
+  </table>
+</div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyZMTBXTw9dYP73mjHlGbLofpx_EkOuBy3CbfQyWkxvsUC3fTlGb_p82VK2xSrDkOsS/exec";
+const API_URL =
+"https://script.google.com/macros/s/AKfycbwTWp8gsfzPW3pWUk_zY0ctvfHSmJuaFQ9jdwDCBZ0AoiBYi3GyQT4upHVop4FL4c6H/exec";
 
-function submitProduction() {
+function openTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.style.display="none");
+  document.getElementById(id).style.display="block";
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.remove("active"));
+  event.target.classList.add("active");
+}
 
-  fetch(API_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+function releaseProduction() {
+  const next = nextProcess.value;
 
+  fetch(API_URL,{
+    method:"POST",
+    mode:"no-cors",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      current_process:"Production",
+      next_process: next,
       part_no: part.value,
       batch_no: batch.value,
       work_order_no: wo.value,
@@ -73,21 +168,31 @@ function submitProduction() {
       shift: shift.value,
       grn_no: grn.value,
       coil_no: coil.value,
-
-      from_process: "-",
-      to_process: nextProcess.value,
-
       handling_type: handlingType.value,
       handling_qty: handlingQty.value,
       handling_count: handlingCount.value,
-
-      status: "RELEASED",
-      operator: "Production",
-      remarks: ""
+      status:"OK",
+      operator:"Production"
     })
   });
 
-  alert("Material released to " + nextProcess.value);
+  addRow(next.toLowerCase()+"Table", batch.value, part.value, qty.value, next);
+  alert("Released to " + next);
+}
+
+function addRow(tableId,batch,part,qty,next){
+  const tr=document.createElement("tr");
+  tr.innerHTML=
+    `<td>${batch}</td>
+     <td>${part}</td>
+     <td>${qty}</td>
+     <td><button onclick="processOK(this,'${next}')">OK</button></td>`;
+  document.getElementById(tableId).appendChild(tr);
+}
+
+function processOK(btn,current){
+  const row=btn.parentElement.parentElement;
+  row.remove();
 }
 </script>
 
