@@ -1,211 +1,215 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Material Process Tracking System</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>Material Process Tracking System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<style>
-body { font-family: Arial; background:#f2f2f2; padding:10px; }
-h2 { margin:10px 0; }
-.tabs button {
-  width:100%;
-  padding:8px;
-  margin:2px 0;
-  border:none;
-  background:#ccc;
-  cursor:pointer;
-}
-.tabs button.active {
-  background:#2c3e50;
-  color:white;
-}
-.tab {
-  display:none;
-  background:white;
-  padding:10px;
-  margin-top:10px;
-}
-input, select, button {
-  width:100%;
-  padding:6px;
-  margin:4px 0;
-}
-button.action {
-  background:#2c3e50;
-  color:white;
-}
-table {
-  width:100%;
-  border-collapse:collapse;
-}
-th, td {
-  border:1px solid #aaa;
-  padding:6px;
-  text-align:center;
-}
-</style>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; }
+    h1 { text-align:center; }
+    .tabs button {
+      width:100%;
+      padding:10px;
+      margin:4px 0;
+      background:#cfcfcf;
+      border:none;
+      cursor:pointer;
+      font-weight:bold;
+    }
+    .tabs button.active { background:#2c3e50; color:#fff; }
+
+    .section { display:none; background:#fff; padding:15px; margin-top:10px; }
+    .section.active { display:block; }
+
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    th, td { border:1px solid #ccc; padding:6px; text-align:center; }
+    th { background:#34495e; color:#fff; }
+
+    input, select, textarea {
+      width:100%; padding:6px; margin:4px 0;
+    }
+    button.action {
+      padding:6px 10px; margin:2px;
+      background:#2c3e50; color:#fff; border:none; cursor:pointer;
+    }
+    button.ng { background:#b30000; }
+  </style>
 </head>
 
 <body>
 
-<h2>Material Process Tracking System</h2>
+<h1>Material Process Tracking System</h1>
 
+<!-- PROCESS TABS -->
 <div class="tabs">
-  <button class="active" onclick="openTab('production',this)">Production</button>
-  <button onclick="openTab('tempering',this)">Tempering</button>
-  <button onclick="openTab('qa',this)">QA</button>
-  <button onclick="openTab('packing',this)">Packing</button>
+  <button onclick="openTab('Production')" class="active">Production</button>
+  <button onclick="openTab('Tempering')">Tempering</button>
+  <button onclick="openTab('Cleaning')">Cleaning</button>
+  <button onclick="openTab('Vibro')">Vibro</button>
+  <button onclick="openTab('Plating')">Plating</button>
+  <button onclick="openTab('Sorting')">Sorting</button>
+  <button onclick="openTab('QA')">QA</button>
+  <button onclick="openTab('Packing')">Packing</button>
 </div>
 
 <!-- ================= PRODUCTION ================= -->
-<div id="production" class="tab" style="display:block">
-<h3>Production Release</h3>
+<div id="Production" class="section active">
+  <h3>Production Release</h3>
 
-<input id="part" placeholder="Part No">
-<input id="workOrder" placeholder="Work Order No">
-<input id="machine" placeholder="Machine No">
-<input id="qty" type="number" placeholder="Quantity">
-<input id="plant" placeholder="Plant">
-<input id="shift" placeholder="Shift">
-<input id="grncoil" placeholder="GRN / Coil No">
+  <input id="p_part" placeholder="Part No">
+  <input id="p_work" placeholder="Work Order No">
+  <input id="p_machine" placeholder="Machine No">
+  <input id="p_qty" placeholder="Quantity">
+  <input id="p_plant" placeholder="Plant">
+  <input id="p_shift" placeholder="Shift">
+  <input id="p_grn" placeholder="GRN / Coil No">
 
-<label>Next Process</label>
-<select id="nextProcess">
-  <option>Tempering</option>
-  <option>QA</option>
-</select>
+  <select id="p_next">
+    <option>Tempering</option>
+    <option>Cleaning</option>
+    <option>Vibro</option>
+    <option>Plating</option>
+    <option>Sorting</option>
+    <option>QA</option>
+  </select>
 
-<label>Handling Type</label>
-<select id="handlingType">
-  <option>Bin</option>
-  <option>Bag</option>
-</select>
+  <select id="p_handling">
+    <option>Bin</option>
+    <option>Bag</option>
+  </select>
 
-<input id="handlingQty" placeholder="Qty per Bin / Bag">
-<input id="handlingCount" placeholder="No. of Bins / Bags">
+  <input id="p_hqty" placeholder="Qty per Bin/Bag">
+  <input id="p_hcount" placeholder="No. of Bins/Bags">
 
-<button class="action" onclick="releaseProduction()">Release</button>
+  <button class="action" onclick="releaseProduction()">Release</button>
 </div>
 
-<!-- ================= TEMPERING ================= -->
-<div id="tempering" class="tab">
-<h3>Tempering</h3>
-<table id="temperingTable"></table>
-</div>
+<!-- ================= GENERIC PROCESS TABLE ================= -->
+<script>
+const PROCESSES = ["Tempering","Cleaning","Vibro","Plating","Sorting","QA","Packing"];
+</script>
 
-<!-- ================= QA ================= -->
-<div id="qa" class="tab">
-<h3>QA</h3>
-<table id="qaTable"></table>
-</div>
-
-<!-- ================= PACKING ================= -->
-<div id="packing" class="tab" style="display:block">
-<h3>Packing (Pending)</h3>
-<table id="packingTable"></table>
-</div>
+<div id="processSections"></div>
 
 <script>
-/* 🔴 APPS SCRIPT URL */
-const API_URL =
-"https://script.google.com/macros/s/AKfycbwkqqSuT0h-59YaTWueNI05qExZ5w8BZI-E1R2LKMK43-7pedBEmCYb3BB_aE6zXi8h/exec";
+/* ================= CONFIG ================= */
+const SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycby3cdEKlXXZcVoA2BedPLKIaelNf9EREfghqAAao9uBZ0LKybYp2iwmMLltL5Smsrpq/exec";
 
-/* TAB SWITCH */
-function openTab(id, btn) {
-  document.querySelectorAll('.tab').forEach(t => t.style.display="none");
-  document.getElementById(id).style.display="block";
-  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-
-  if (id==="tempering") loadProcess("Tempering","temperingTable");
-  if (id==="qa") loadProcess("QA","qaTable");
-  if (id==="packing") loadProcess("Packing","packingTable");
+/* ================= TAB HANDLING ================= */
+function openTab(name){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+  document.getElementById(name).classList.add("active");
+  event.target.classList.add("active");
 }
 
-/* PRODUCTION RELEASE */
-function releaseProduction() {
-  fetch(API_URL,{
-    method:"POST",
-    mode:"no-cors",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      current_process:"Production",
-      next_process:nextProcess.value,
-      part_no:part.value,
-      work_order_no:workOrder.value,
-      machine_no:machine.value,
-      quantity:qty.value,
-      plant:plant.value,
-      shift:shift.value,
-      grn_coil_no:grncoil.value,
-      handling_type:handlingType.value,
-      handling_qty:handlingQty.value,
-      handling_count:handlingCount.value,
-      status:"OK",
-      operator:"Production",
-      remarks:""
-    })
+/* ================= DYNAMIC PROCESS SECTIONS ================= */
+const container = document.getElementById("processSections");
+
+PROCESSES.forEach(p=>{
+  container.innerHTML += `
+  <div id="${p}" class="section">
+    <h3>${p}</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Part</th><th>Qty</th><th>GRN/Coil</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="${p}_body"></tbody>
+    </table>
+  </div>`;
+});
+
+/* ================= PRODUCTION RELEASE ================= */
+function releaseProduction(){
+  const data = {
+    part_no: p_part.value,
+    work_order: p_work.value,
+    machine: p_machine.value,
+    quantity: p_qty.value,
+    plant: p_plant.value,
+    shift: p_shift.value,
+    grn: p_grn.value,
+    from: "Production",
+    to: p_next.value,
+    handling: p_handling.value,
+    handling_qty: p_hqty.value,
+    handling_count: p_hcount.value,
+    status: "RELEASED",
+    operator: "Production",
+    remarks: ""
+  };
+  sendToSheet(data);
+  alert("Released to " + p_next.value);
+}
+
+/* ================= LOAD DATA ================= */
+async function loadProcess(process){
+  const res = await fetch(SCRIPT_URL + "?process=" + process);
+  const rows = await res.json();
+  const body = document.getElementById(process+"_body");
+  body.innerHTML = "";
+
+  rows.forEach(r=>{
+    body.innerHTML += `
+      <tr>
+        <td>${r.part}</td>
+        <td>${r.qty}</td>
+        <td>${r.grn}</td>
+        <td>
+          <select id="next_${r.id}">
+            ${PROCESSES.map(p=>`<option>${p}</option>`).join("")}
+          </select>
+          <input id="rem_${r.id}" placeholder="Remark (mandatory)">
+          <button class="action" onclick="processOk('${process}','${r.id}')">OK</button>
+          <button class="action ng" onclick="processNg('${process}','${r.id}')">NG</button>
+        </td>
+      </tr>`;
   });
-  alert("Released");
 }
 
-/* LOAD DATA */
-function loadProcess(process, tableId) {
-  fetch(API_URL+"?process="+process)
-    .then(r=>r.json())
-    .then(rows=>{
-      const table=document.getElementById(tableId);
-      table.innerHTML=
-        "<tr><th>Part</th><th>Qty</th><th>GRN/Coil</th><th>Action</th></tr>";
-
-      rows.forEach(r=>{
-        const tr=document.createElement("tr");
-        tr.innerHTML=`
-          <td>${r.Part_No}</td>
-          <td>${r.Quantity}</td>
-          <td>${r.GRN_Coil_No}</td>
-          <td>
-            <select class="nextP">
-              ${process==="QA" ? "<option>Packing</option>" : "<option>QA</option>"}
-            </select>
-            <input class="remark" placeholder="Remark mandatory">
-            <button class="action" onclick="processOK(this,'${process}')">OK</button>
-          </td>`;
-        table.appendChild(tr);
-      });
-    });
-}
-
-/* OK ACTION */
-function processOK(btn,current){
-  const row=btn.parentElement.parentElement;
-  const part=row.children[0].innerText;
-  const qty=row.children[1].innerText;
-  const grn=row.children[2].innerText;
-  const next=row.querySelector(".nextP").value;
-  const remark=row.querySelector(".remark").value;
-
+/* ================= PROCESS ACTIONS ================= */
+function processOk(proc,id){
+  const remark = document.getElementById("rem_"+id).value;
   if(!remark){ alert("Remark mandatory"); return; }
 
-  fetch(API_URL,{
-    method:"POST",
-    mode:"no-cors",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      current_process:current,
-      next_process:next,
-      part_no:part,
-      quantity:qty,
-      grn_coil_no:grn,
-      status:"OK",
-      operator:current,
-      remarks:remark
-    })
+  sendToSheet({
+    row_id:id,
+    from:proc,
+    to:document.getElementById("next_"+id).value,
+    status:"OK",
+    remarks:remark,
+    operator:proc
   });
-
-  row.remove();
 }
+
+function processNg(proc,id){
+  const remark = document.getElementById("rem_"+id).value;
+  if(!remark){ alert("Remark mandatory"); return; }
+
+  sendToSheet({
+    row_id:id,
+    from:proc,
+    to:"-",
+    status:"NG",
+    remarks:remark,
+    operator:proc
+  });
+}
+
+/* ================= SEND TO SHEET ================= */
+function sendToSheet(obj){
+  fetch(SCRIPT_URL,{
+    method:"POST",
+    body:JSON.stringify(obj)
+  }).then(()=>PROCESSES.forEach(loadProcess));
+}
+
+/* ================= INITIAL LOAD ================= */
+PROCESSES.forEach(loadProcess);
 </script>
 
 </body>
