@@ -2,16 +2,19 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Material Process Tracking System</title>
+<title>Material Process Tracking</title>
 
 <style>
 body{font-family:Arial;background:#f4f6f8;padding:10px}
-.tab{padding:10px;margin:4px;background:#ccc;cursor:pointer}
-.active{background:#2c3e50;color:#fff}
-table{width:100%;border-collapse:collapse;background:#fff}
+h2{margin-top:0}
+.tabBtn{padding:8px;margin:3px;background:#ccc;cursor:pointer;border:none;width:100%}
+.tabBtn.active{background:#2c3e50;color:#fff}
+.section{display:none;background:#fff;padding:10px;margin-top:8px}
+table{width:100%;border-collapse:collapse}
 th,td{border:1px solid #ccc;padding:6px;text-align:center}
-button{padding:6px;width:100%}
-input,select{width:100%;padding:6px}
+input,select,button{width:100%;padding:6px;margin:2px 0}
+.ok{background:#2c3e50;color:#fff;border:none}
+.ng{background:#b30000;color:#fff;border:none}
 </style>
 </head>
 
@@ -20,45 +23,47 @@ input,select{width:100%;padding:6px}
 <h2>Material Process Tracking System</h2>
 
 <div id="tabs"></div>
-
-<div id="content"></div>
+<div id="sections"></div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpIcBlqoiZ2Qu9wZYCAS9Fvrnqh3QE-FltGrw_2_wHSa4gwCQnf8CJsh4DZPo3L_V2/exec";
+/* ===== CONFIG ===== */
+const SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycbxISEdCwxVqm5STH5hSk8rSSpdCo2RxsmmtJsiLFgA8it43nadif3OCTA0Rk96ZCXj7/exec";
 
 const PROCESSES = [
- "Production","Tempering","Cleaning","Vibro",
- "Plating","Deburring","Cutting","Sorting","QA","Packing"
+  "Production",
+  "Tempering",
+  "Cleaning",
+  "Vibro",
+  "Plating",
+  "Deburring",
+  "Cutting",
+  "Sorting",
+  "QA",
+  "Packing"
 ];
 
-let current = "Production";
-
 const tabsDiv = document.getElementById("tabs");
-const contentDiv = document.getElementById("content");
+const sectionsDiv = document.getElementById("sections");
 
+/* ===== BUILD UI ===== */
 PROCESSES.forEach(p=>{
-  const d=document.createElement("div");
-  d.className="tab";
-  d.innerText=p;
-  d.onclick=()=>loadTab(p);
-  tabsDiv.appendChild(d);
+  const b=document.createElement("button");
+  b.className="tabBtn";
+  b.innerText=p;
+  b.onclick=()=>openTab(p);
+  tabsDiv.appendChild(b);
+
+  sectionsDiv.innerHTML+=`
+  <div id="${p}" class="section">
+    <h3>${p}</h3>
+    ${p==="Production"?productionForm():""}
+    ${p!=="Production"?processTable(p):""}
+  </div>`;
 });
 
-loadTab("Production");
-
-function loadTab(stage){
-  current=stage;
-  [...tabsDiv.children].forEach(t=>{
-    t.classList.toggle("active",t.innerText===stage);
-  });
-
-  if(stage==="Production") renderProduction();
-  else renderProcess(stage);
-}
-
-function renderProduction(){
-contentDiv.innerHTML=`
-<h3>Production Release</h3>
+function productionForm(){
+return `
 <input id="part" placeholder="Part No">
 <input id="wo" placeholder="Work Order No">
 <input id="mc" placeholder="Machine No">
@@ -67,94 +72,143 @@ contentDiv.innerHTML=`
 <input id="shift" placeholder="Shift">
 <input id="grn" placeholder="GRN / Coil No">
 
+<label>Next Process</label>
 <select id="next">
 ${PROCESSES.slice(1).map(p=>`<option>${p}</option>`).join("")}
 </select>
 
+<label>Handling Type</label>
 <select id="ht"><option>Bin</option><option>Bag</option></select>
-<input id="hq" placeholder="Qty per Bin/Bag">
-<input id="hc" placeholder="No of Bins/Bags">
+<input id="hq" placeholder="Qty per Bin / Bag">
+<input id="hc" placeholder="No of Bins / Bags">
 
-<button onclick="release()">Release</button>
+<button class="ok" onclick="releaseProduction()">Release Production</button>
 `;
 }
 
-function release(){
-  const payload={
-    part_no:part.value,
-    work_order_no:wo.value,
-    machine_no:mc.value,
-    quantity:qty.value,
-    plant:plant.value,
-    shift:shift.value,
-    grn_coil_no:grn.value,
-    from_process:"Production",
-    to_process:next.value,
-    handling_type:ht.value,
-    handling_qty:hq.value,
-    handling_count:hc.value,
-    status:"RELEASED",
-    operator:"Production",
-    remarks:""
-  };
-  fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(payload)});
-  alert("Released");
-}
-
-function renderProcess(stage){
-fetch(`${SCRIPT_URL}?stage=${stage}`)
-.then(r=>r.json())
-.then(rows=>{
-let html=`<h3>${stage}</h3><table>
-<tr><th>Part</th><th>Qty</th><th>GRN</th><th>Next</th><th>Remark</th><th>Action</th></tr>`;
-rows.forEach(r=>{
-  const next=PROCESSES[PROCESSES.indexOf(stage)+1]||"Packing";
-  html+=`
+function processTable(p){
+return `
+<table>
+<thead>
 <tr>
-<td>${r[1]}</td>
-<td>${r[4]}</td>
-<td>${r[7]}</td>
-<td>${next}</td>
-<td><input id="rm_${r[7]}"></td>
-<td>
-<button onclick="ok('${stage}','${next}','${r[7]}',${r[4]})">OK</button>
-<button onclick="ng('${stage}','${r[7]}',${r[4]})">NG</button>
-</td>
-</tr>`;
-});
-contentDiv.innerHTML=html+"</table>";
-});
+<th>Part</th><th>Qty</th><th>GRN/Coil</th>
+<th>Next Process</th><th>Remark</th><th>Action</th>
+</tr>
+</thead>
+<tbody id="${p}_body"></tbody>
+</table>`;
 }
 
-function ok(from,to,grn,qty){
-send(from,to,grn,qty,"OK");
+/* ===== TAB HANDLING ===== */
+function openTab(p){
+  document.querySelectorAll(".section").forEach(s=>s.style.display="none");
+  document.querySelectorAll(".tabBtn").forEach(b=>b.classList.remove("active"));
+  document.getElementById(p).style.display="block";
+  [...tabsDiv.children].find(b=>b.innerText===p).classList.add("active");
+
+  if(p!=="Production") loadProcess(p);
 }
 
-function ng(from,grn,qty){
-send(from,from,grn,qty,"NG");
+/* ===== PRODUCTION RELEASE ===== */
+function releaseProduction(){
+  fetch(SCRIPT_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      from_process:"Production",
+      to_process:next.value,
+      part_no:part.value,
+      work_order_no:wo.value,
+      machine_no:mc.value,
+      quantity:qty.value,
+      plant:plant.value,
+      shift:shift.value,
+      grn_coil_no:grn.value,
+      handling_type:ht.value,
+      handling_qty:hq.value,
+      handling_count:hc.value
+    })
+  });
+  alert("Production Released");
 }
 
-function send(from,to,grn,qty,status){
-const payload={
-  part_no:"",
-  work_order_no:"",
-  machine_no:"",
-  quantity:qty,
-  plant:"",
-  shift:"",
-  grn_coil_no:grn,
-  from_process:from,
-  to_process:to,
-  handling_type:"",
-  handling_qty:"",
-  handling_count:"",
-  status:status,
-  operator:from,
-  remarks:document.querySelector(`#rm_${grn}`).value
-};
-fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(payload)});
-loadTab(current);
+/* ===== LOAD PROCESS DATA ===== */
+function loadProcess(p){
+  fetch(`${SCRIPT_URL}?process=${p}`)
+  .then(r=>r.json())
+  .then(rows=>{
+    const body=document.getElementById(p+"_body");
+    body.innerHTML="";
+    rows.forEach((r,i)=>{
+      body.innerHTML+=`
+      <tr>
+        <td>${r.Part_No}</td>
+        <td>${r.Quantity}</td>
+        <td>${r.GRN_Coil_No}</td>
+        <td>
+          <select id="next_${p}_${i}">
+            ${PROCESSES.filter(x=>x!==p)
+              .map(x=>`<option>${x}</option>`).join("")}
+          </select>
+        </td>
+        <td><input id="rm_${p}_${i}" placeholder="Remark mandatory"></td>
+        <td>
+          <button class="ok"
+            onclick="processOK('${p}',${r._row},'${r.Part_No}','${r.GRN_Coil_No}',${r.Quantity},${i})">
+            OK
+          </button>
+          <button class="ng"
+            onclick="processNG('${p}',${r._row},'${r.Part_No}','${r.GRN_Coil_No}',${r.Quantity},${i})">
+            NG
+          </button>
+        </td>
+      </tr>`;
+    });
+  });
 }
+
+/* ===== OK / NG ===== */
+function processOK(p,row,part,grn,qty,i){
+  const remark=document.getElementById(`rm_${p}_${i}`).value;
+  if(!remark){alert("Remark mandatory");return;}
+  const next=document.getElementById(`next_${p}_${i}`).value;
+
+  fetch(SCRIPT_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      current_process:p,
+      next_process:next,
+      _row:row,
+      part_no:part,
+      quantity:qty,
+      grn_coil_no:grn,
+      status:"OK",
+      operator:p,
+      remarks:remark
+    })
+  }).then(()=>loadProcess(p));
+}
+
+function processNG(p,row,part,grn,qty,i){
+  const remark=document.getElementById(`rm_${p}_${i}`).value;
+  if(!remark){alert("Remark mandatory");return;}
+
+  fetch(SCRIPT_URL,{
+    method:"POST",
+    body:JSON.stringify({
+      current_process:p,
+      _row:row,
+      part_no:part,
+      quantity:qty,
+      grn_coil_no:grn,
+      status:"NG",
+      operator:p,
+      remarks:remark
+    })
+  }).then(()=>loadProcess(p));
+}
+
+/* ===== DEFAULT TAB ===== */
+openTab("Production");
 </script>
 
 </body>
